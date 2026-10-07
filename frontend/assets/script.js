@@ -152,4 +152,59 @@ function checkout() {
   offcanvas.hide();
 }
 
-document.addEventListener("DOMContentLoaded", loadMenu);
+function initPizzaForm() {
+  const form = document.getElementById("pizza-form");
+
+  if (!form) {
+    return;
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const payload = {
+      nome: form.nome.value.trim(),
+      descricao: form.descricao.value.trim(),
+      preco: Number(form.preco.value),
+      disponivel: form.disponivel.checked,
+      imagem: form.imagem.value.trim() || undefined,
+    };
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    const feedback = document.getElementById("form-feedback");
+
+    submitButton.disabled = true;
+    feedback.textContent = "Cadastrando pizza...";
+    feedback.className = "alert alert-info mt-3";
+
+    try {
+      const response = await fetch("http://localhost:3000/api/pizzas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.mensagem || "Não foi possível cadastrar a pizza.");
+      }
+
+      feedback.textContent = `Pizza "${data.nome}" cadastrada com sucesso!`;
+      feedback.className = "alert alert-success mt-3";
+      form.reset();
+    } catch (error) {
+      feedback.textContent = error.message;
+      feedback.className = "alert alert-danger mt-3";
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadMenu();
+  initPizzaForm();
+});

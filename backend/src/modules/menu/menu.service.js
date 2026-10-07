@@ -1,70 +1,23 @@
-const pizzas = [
-  {
-    id: 1,
-    nome: "Calabresa com queijo",
-    descricao: "Molho de tomate, muçarela, calabresa e cebola roxa.",
-    preco: 350,
-    disponivel: true,
-    imagem:
-      "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: 2,
-    nome: "Frango",
-    descricao: "Molho de tomate, muçarela, frango desfiado e catupiry.",
-    preco: 30,
-    disponivel: true,
-    imagem:
-      "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: 3,
-    nome: "Margherita",
-    descricao: "Molho de tomate artesanal, muçarela de búfala e manjericão.",
-    preco: 35,
-    disponivel: true,
-    imagem:
-      "https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: 4,
-    nome: "Mussarela",
-    descricao: "Molho de tomate artesanal e muçarela de búfala",
-    preco: 35,
-    disponivel: true,
-    imagem:
-      "https://anamariabrogui.com.br/assets/uploads/receitas/fotos/usuario-1932-5a1b7911dfda6e3c351c30de564da267.jpg",
-  },
-  {
-    id: 5,
-    nome: "Chocolate com granulado",
-    descricao: "Chocolate com granulado.",
-    preco: 615,
-    disponivel: true,
-    imagem:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQIFobCIE6LTXEZBj70D8RWLsQdSsIWlbFsSAKow7ZvD-YvNy_VsUtAFJU&s=10",
-  },
-  {
-    id: 6,
-    nome: "Portuguesa",
-    descricao:
-      "Molho de tomate artesanal, muçarela de búfala, ovos, tomate, azeitonas e rodelas de cebola.",
-    preco: 45,
-    disponivel: true,
-    imagem:
-      "https://www.receitasnestle.com.br/sites/default/files/styles/recipe_detail_desktop_new/public/srh_recipes/2eb7ece4ae9a67b773aa138589e2031d.jpg?itok=8rB5qKP-",
-  },
-  {
-    id: 6,
-    nome: "Portuguesa",
-    descricao:
-      "Molho de tomate artesanal, muçarela de búfala, ovos, tomate, azeitonas e rodelas de cebola.",
-    preco: 45,
-    disponivel: true,
-    imagem:
-      "https://www.receitasnestle.com.br/sites/default/files/styles/recipe_detail_desktop_new/public/srh_recipes/2eb7ece4ae9a67b773aa138589e2031d.jpg?itok=8rB5qKP-",
-  },
-];
+import { ensureInitialData, getDb } from "../../core/database.js";
+
+const db = getDb();
+
+ensureInitialData();
+
+function mapPizza(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: Number(row.id),
+    nome: row.nome,
+    descricao: row.descricao,
+    preco: Number(row.preco),
+    disponivel: Boolean(row.disponivel),
+    imagem: row.imagem,
+  };
+}
 
 function validarDadosPizza(dados) {
   const nome = String(dados?.nome ?? "").trim();
@@ -101,7 +54,8 @@ function validarDadosPizza(dados) {
 }
 
 export function listarTodas() {
-  return pizzas;
+  const rows = db.prepare("SELECT * FROM pizzas ORDER BY id").all();
+  return rows.map(mapPizza);
 }
 
 export function listarPizzas() {
@@ -109,7 +63,8 @@ export function listarPizzas() {
 }
 
 export function buscarPorId(id) {
-  return pizzas.find((pizza) => pizza.id === id);
+  const row = db.prepare("SELECT * FROM pizzas WHERE id = ?").get(id);
+  return mapPizza(row);
 }
 
 export function criar(dados) {
@@ -119,18 +74,24 @@ export function criar(dados) {
     return { erro: resultado.mensagem };
   }
 
-  const novaPizza = {
-    id: pizzas.length + 1,
-    ...resultado.dados,
-  };
+  const statement = db.prepare(`
+    INSERT INTO pizzas (nome, descricao, preco, disponivel, imagem)
+    VALUES (?, ?, ?, ?, ?)
+  `);
 
-  pizzas.push(novaPizza);
+  const result = statement.run(
+    resultado.dados.nome,
+    resultado.dados.descricao,
+    resultado.dados.preco,
+    resultado.dados.disponivel ? 1 : 0,
+    resultado.dados.imagem,
+  );
 
-  return novaPizza;
+  return buscarPorId(result.lastInsertRowid);
 }
 
 export function atualizar(id, dados) {
-  const pizza = pizzas.find((pizza) => pizza.id === id);
+  const pizza = buscarPorId(id);
 
   if (!pizza) {
     return null;
@@ -146,24 +107,35 @@ export function atualizar(id, dados) {
       return { erro: resultado.mensagem };
     }
 
-    pizza.nome = resultado.dados.nome;
-    pizza.descricao = resultado.dados.descricao;
-    pizza.preco = resultado.dados.preco;
-    pizza.disponivel = resultado.dados.disponivel;
-    pizza.imagem = resultado.dados.imagem;
+    db.prepare(
+      `
+      UPDATE pizzas
+      SET nome = ?, descricao = ?, preco = ?, disponivel = ?, imagem = ?
+      WHERE id = ?
+    `,
+    ).run(
+      resultado.dados.nome,
+      resultado.dados.descricao,
+      resultado.dados.preco,
+      resultado.dados.disponivel ? 1 : 0,
+      resultado.dados.imagem,
+      id,
+    );
+
+    return buscarPorId(id);
   }
 
   return pizza;
 }
 
 export function remover(id) {
-  const indice = pizzas.findIndex((pizza) => pizza.id === id);
+  const pizza = buscarPorId(id);
 
-  if (indice === -1) {
+  if (!pizza) {
     return null;
   }
 
-  const pizzaRemovida = pizzas.splice(indice, 1);
+  db.prepare("DELETE FROM pizzas WHERE id = ?").run(id);
 
-  return pizzaRemovida[0];
+  return pizza;
 }

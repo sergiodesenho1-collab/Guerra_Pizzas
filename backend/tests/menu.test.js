@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { listarTodas, buscarPorId } from "../src/modules/menu/menu.service.js";
 import { criarPizza } from "../src/modules/menu/menu.controller.js";
+import { getDb } from "../src/core/database.js";
 
 function buildRes() {
   return {
@@ -31,6 +32,17 @@ test("deve buscar uma pizza pelo id", () => {
 
   assert.ok(pizza);
   assert.equal(pizza.nome, "Calabresa");
+});
+
+test("deve persistir pizzas em tabela do banco de dados", () => {
+  const db = getDb();
+  const tabela = db
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'pizzas'",
+    )
+    .get();
+
+  assert.ok(tabela);
 });
 
 test("deve rejeitar criação de pizza sem nome", () => {

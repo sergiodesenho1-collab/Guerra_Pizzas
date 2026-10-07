@@ -24,19 +24,24 @@
           ><i class="fa-solid fa-pizza-slice text-warning me-2"></i>Bella
           Napoli</a
         >
-        <button
-          class="btn btn-warning position-relative"
-          type="button"
-          data-bs-toggle="offcanvas"
-          data-bs-target="#cartOffcanvas"
-        >
-          <i class="fa-solid fa-cart-shopping"></i> Carrinho
-          <span
-            id="cart-badge"
-            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-            >0</span
+        <div class="d-flex gap-2 align-items-center">
+          <a href="cadastro.html" class="btn btn-outline-light btn-sm">
+            <i class="fa-solid fa-plus me-1"></i> Cadastrar pizza
+          </a>
+          <button
+            class="btn btn-warning position-relative"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#cartOffcanvas"
           >
-        </button>
+            <i class="fa-solid fa-cart-shopping"></i> Carrinho
+            <span
+              id="cart-badge"
+              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+              >0</span
+            >
+          </button>
+        </div>
       </div>
     </nav>
 
